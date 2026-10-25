@@ -1,0 +1,27 @@
+
+services:
+  - type: web
+    name: greyflow-api
+    runtime: python
+    plan: free
+
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    healthCheckPath: /health
+
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.4
+
+      - key: OPENAI_API_KEY
+        sync: false
+
+      - key: GREYFLOW_API_KEY
+        sync: false
+
+      - key: GREYFLOW_IMAGE_MODEL
+        value: gpt-image-1
+
+      - key: GREYFLOW_ALLOWED_ORIGINS
+        sync: false
