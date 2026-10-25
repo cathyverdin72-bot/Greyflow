@@ -13,8 +13,17 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 APP_NAME = "GreyFlow"
 APP_VERSION = "0.1.0"
 
-OPENAI_API_URL = "https://api.openai.com/v1/images/generations"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+# Supports OpenAI-compatible providers without changing GreyFlow's API.
+IMAGE_API_URL = os.getenv(
+    "GREYFLOW_IMAGE_API_URL",
+    "https://api.openai.com/v1/images/generations",
+).strip()
+
+IMAGE_API_KEY = os.getenv(
+    "GREYFLOW_IMAGE_API_KEY",
+    os.getenv("OPENAI_API_KEY", ""),
+).strip()
+
 GREYFLOW_API_KEY = os.getenv("GREYFLOW_API_KEY", "").strip()
 IMAGE_MODEL = os.getenv("GREYFLOW_IMAGE_MODEL", "gpt-image-1").strip()
 
@@ -103,7 +112,7 @@ async def root() -> dict[str, str]:
 
 @app.get("/health")
 async def health() -> dict[str, object]:
-    configured = bool(OPENAI_API_KEY and GREYFLOW_API_KEY)
+    configured = bool(IMAGE_API_URL and IMAGE_API_KEY and GREYFLOW_API_KEY)
 
     return {
         "status": "ok",
@@ -126,7 +135,7 @@ async def generate_image(
 ) -> ImageGenerationResponse:
     require_api_key(x_greyflow_api_key)
 
-    if not OPENAI_API_KEY:
+    if not IMAGE_API_URL or not IMAGE_API_KEY:
         raise HTTPException(
             status_code=503,
             detail="Image provider credentials are not configured.",
@@ -146,9 +155,9 @@ async def generate_image(
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(
-                OPENAI_API_URL,
+                IMAGE_API_URL,
                 headers={
-                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Authorization": f"Bearer {IMAGE_API_KEY}",
                     "Content-Type": "application/json",
                 },
                 json=provider_payload,
